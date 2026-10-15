@@ -1,0 +1,101 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PhishGuard – AI Scam Shield</title>
+<style>
+:root{--bg:#070b14;--card:#0f1729;--ln:#1e2a44;--tx:#e6edf7;--mu:#8393b2;--ac:#22d3ee;--ac2:#a78bfa;--Safe:#22c55e;--Low:#84cc16;--Medium:#f59e0b;--High:#f97316;--Critical:#ef4444}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:radial-gradient(1200px 500px at 80% -10%,#1b2a5a55,transparent),var(--bg);color:var(--tx)}
+header{display:flex;gap:14px;align-items:center;padding:14px 24px;border-bottom:1px solid var(--ln);flex-wrap:wrap}
+h1{font-size:20px;margin:0 14px 0 0;background:linear-gradient(90deg,var(--ac),var(--ac2));-webkit-background-clip:text;color:transparent}
+nav button{background:none;border:0;color:var(--mu);font-size:15px;padding:8px 14px;cursor:pointer;border-radius:8px}nav button.on{background:var(--card);color:var(--ac)}
+main{max-width:1000px;margin:20px auto;padding:0 16px}.card{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:18px;margin-bottom:16px}
+textarea,input,select{width:100%;background:#0a1122;color:var(--tx);border:1px solid var(--ln);border-radius:10px;padding:11px;font:inherit}textarea{min-height:130px}
+.p{background:linear-gradient(90deg,var(--ac),var(--ac2));color:#06101f;border:0;border-radius:10px;padding:11px 20px;font-weight:700;cursor:pointer}.s{background:#16213a;color:var(--tx);border:1px solid var(--ln);border-radius:10px;padding:10px 14px;cursor:pointer}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}.hide{display:none}.mu{color:var(--mu);font-size:13px}.two{display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:center}
+@media(max-width:700px){.two{grid-template-columns:1fr}}.badge{padding:3px 12px;border-radius:99px;color:#06101f;font-weight:700}
+.type{border:1px solid var(--ac2);background:#a78bfa14;border-radius:12px;padding:12px;margin-top:12px}.warn{padding:12px;border-radius:10px;margin:12px 0;border-left:5px solid;background:#0a1122}
+mark{background:#f59e0b55;color:inherit;border-radius:3px;padding:0 2px}.bar{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--ac),var(--ac2));margin-top:4px}.f{margin:10px 0}.f b{float:right}
+.txt{white-space:pre-wrap;word-break:break-word;background:#0a1122;padding:12px;border-radius:10px;margin-top:12px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.big{font-size:34px;font-weight:700}
+.h{border-bottom:1px solid var(--ln);padding:10px 0}.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;padding:6px}
+ol{margin:8px 0 0 18px;padding:0}li{margin:4px 0}.chain{color:var(--mu);font-size:12px;word-break:break-all}
+@media print{header,#a>.card:first-child,.row{display:none}body{background:#fff;color:#000}.card{border-color:#ccc;background:#fff}}
+</style></head><body>
+<header><h1>🛡️ PhishGuard</h1><nav><button class="on" data-t="a">Analyze</button><button data-t="h">History</button><button data-t="b">Bulk Scan</button><button data-t="d">Threat Dashboard</button></nav>
+<button class="s" id="lg" style="margin-left:auto" onclick="toggleLang(this)">हिन्दी</button></header>
+<main>
+<section id="a"><div class="card"><textarea id="in" placeholder="Paste an email (with headers), SMS, WhatsApp/social message or URL..."></textarea>
+<div class="row"><button class="p" onclick="run()">Analyze threat</button><button class="s" onclick="samples()">Load demo scams</button>
+<label class="mu"><input type="checkbox" id="deep" style="width:auto"> Deep scan: unmask redirects + domain age</label></div></div><div id="res"></div></section>
+<section id="b" class="hide"><div class="card"><b>Bulk scan</b><div class="mu">Paste many messages (one per line, or separated by a blank line) and/or upload files: .txt, .csv (column named text/message/body), .json, .eml. Up to 200 messages.</div>
+<textarea id="bt" style="margin-top:10px" placeholder="Message 1&#10;&#10;Message 2&#10;&#10;Message 3..."></textarea>
+<div class="row"><input id="bf" type="file" multiple accept=".txt,.csv,.json,.eml" style="flex:1"><button class="p" onclick="bulkRun()">Scan all</button></div></div><div id="bres"></div></section>
+<section id="h" class="hide"><div class="card"><div class="row" style="margin:0"><input id="q" placeholder="Search text, domain or scam type..." oninput="hist()" style="flex:2"><select id="lv" onchange="hist()" style="flex:1"><option value="">All levels</option><option>Safe</option><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></div></div><div class="card" id="hl"></div></section>
+<section id="d" class="hide"><div id="dash"></div></section>
+</main>
+<script>
+let lang='en',last=null;function toggleLang(b){lang=lang=='en'?'hi':'en';b.textContent=lang=='en'?'हिन्दी':'English';last&&show(last)}const $=id=>document.getElementById(id),esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const col=l=>`var(--${l})`,badge=l=>`<span class="badge" style="background:${col(l)}">${l}</span>`;
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x==b));
+ ['a','h','d','b'].forEach(t=>$(t).classList.toggle('hide',t!=b.dataset.t));if(b.dataset.t=='h')hist();if(b.dataset.t=='d')dash()});
+async function post(t){const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t,deep:$('deep').checked})});return r.json()}
+const AX=[['Urgency',['urgency','threat']],['Credentials',['credentials']],['Greed',['reward','job','money']],['Impersonation',['impersonation','header','friend']],['Link risk',['url','redirect']],['Domain intel',['metadata','ml']]];
+function radar(f){const n=AX.length,pt=(i,v)=>{const a=-Math.PI/2+i*2*Math.PI/n;return[110+Math.cos(a)*76*v,110+Math.sin(a)*76*v]},
+ poly=v=>AX.map((_,i)=>pt(i,v).join(',')).join(' '),vals=AX.map(([,c])=>Math.min(1,f.filter(x=>c.includes(x.category)).reduce((s,x)=>s+x.points,0)/35));
+ return`<svg viewBox="-25 0 270 220" width="100%"><g fill="none" stroke="#1e2a44">${[.33,.66,1].map(v=>`<polygon points="${poly(v)}"/>`).join('')}${AX.map((_,i)=>`<line x1="110" y1="110" x2="${pt(i,1)[0]}" y2="${pt(i,1)[1]}"/>`).join('')}</g>
+ <polygon points="${vals.map((v,i)=>pt(i,Math.max(v,.04)).join(',')).join(' ')}" fill="#22d3ee33" stroke="#22d3ee" stroke-width="2"/>${AX.map(([l],i)=>{const[x,y]=pt(i,1.3);return`<text x="${x}" y="${y}" fill="#8393b2" font-size="10" text-anchor="middle">${l}</text>`}).join('')}</svg>`}
+function gauge(r){const c=2*Math.PI*42;return`<svg viewBox="0 0 100 100" width="110"><circle cx="50" cy="50" r="42" fill="none" stroke="#1e2a44" stroke-width="9"/><circle cx="50" cy="50" r="42" fill="none" stroke="${col(r.level)}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${c*r.score/100} ${c}" transform="rotate(-90 50 50)"/><text x="50" y="57" text-anchor="middle" font-size="24" font-weight="700" fill="${col(r.level)}">${r.score}</text></svg>`}
+const STEPS={en:['Do not click links or reply','Never share OTP, PIN or passwords','Block the sender','Report: call 1930 or visit cybercrime.gov.in'],hi:['लिंक पर क्लिक या जवाब न दें','OTP, PIN या पासवर्ड कभी साझा न करें','भेजने वाले को ब्लॉक करें','रिपोर्ट करें: 1930 पर कॉल करें या cybercrime.gov.in पर जाएं']};
+function show(r){last=r;let h=esc(r.text);r.highlights.forEach(s=>{h=h.split(esc(s)).join('<mark>'+esc(s)+'</mark>')});const mx=Math.max(...r.factors.map(f=>f.points),1),st=r.scam_type;
+ $('res').innerHTML=`<div class="card"><div class="two"><div>${radar(r.factors)}</div><div><div class="row" style="margin:0">${gauge(r)}<div>${badge(r.level)}<div class="mu">risk score · ${r.type}</div></div></div>
+ <div class="warn" style="border-color:${col(r.level)}"><b>${r.verdict.malicious?'🚨':r.verdict.suspicious?'⚠️':'✅'} ${lang=='hi'?r.verdict.hi:r.verdict.label}</b><div>${r.extent.summary}</div></div></div></div>
+ ${st?`<div class="type"><b>🎯 ${lang=='hi'?st.hi:st.name}</b><div>${lang=='hi'?st.tip_hi:st.tip}</div></div>`:''}
+ <div class="txt">${h}</div><div class="row"><button class="s" onclick="copyRep()">Copy report</button><button class="s" onclick="print()">Print / save PDF</button></div></div>
+ ${r.level!='Safe'?`<div class="card"><b>📏 How far could it reach?</b><div class="mu">Severity ${r.extent.severity} · ${r.extent.score}/100 · confidence ${r.extent.confidence} · ${r.extent.independent_checks_flagged} independent check(s) flagged it</div><ul>${r.extent.at_risk.map(x=>`<li>${esc(lang=='hi'?x.hi:x.en)}</li>`).join('')}</ul></div>`:''}
+ <div class="card"><b>🧭 ${lang=='hi'?'अब क्या करें':'What to do now'}</b><ol>${r.actions[lang].map(x=>`<li>${esc(x)}</li>`).join('')}</ol>
+ ${Object.values(r.if_already_acted).map(a=>`<details class="type"><summary><b>${esc(a.title[lang])}</b></summary><ol>${a[lang].map(x=>`<li>${esc(x)}</li>`).join('')}</ol></details>`).join('')}
+ ${r.level!='Safe'?`<div class="mu" style="margin-top:10px">${lang=='hi'?'मदद: 1930 (साइबर क्राइम हेल्पलाइन) · cybercrime.gov.in':'Help: 1930 (cybercrime helpline) · cybercrime.gov.in'}</div>`:''}</div>
+ <div class="card"><b>Why this rating</b>${r.factors.length?r.factors.map(f=>`<div class="f">${esc(f.label)} <span class="mu">(${f.category})</span><b>+${f.points}</b><div class="bar" style="width:${f.points/mx*100}%"></div></div>`).join(''):'<p class="mu">No risk factors detected.</p>'}</div>
+ ${r.urls.length?`<div class="card tw"><b>URLs found</b><table><tr><th>URL</th><th>Domain</th><th>Flags</th></tr>${r.urls.map(u=>`<tr><td>${esc(u.url)}${u.meta.chain?`<div class="chain">🔗 ${u.meta.chain.map(esc).join(' → ')}</div>`:''}</td><td>${esc(u.domain)}${u.meta.domain_age_days!=null?` <span class="mu">(${u.meta.domain_age_days}d old)</span>`:''}</td><td>${u.factors.length}</td></tr>`).join('')}</table></div>`:''}`}
+async function run(){const t=$('in').value.trim();if(!t)return;$('res').innerHTML='<div class="card mu">Analyzing...</div>';const r=await post(t);r.text=t;show(r)}
+function copyRep(){const r=last;navigator.clipboard.writeText(`PhishGuard report\nVerdict: ${r.verdict.label}\nRisk: ${r.level} (${r.score}/100)\nType: ${r.scam_type?r.scam_type.name:'n/a'}\nReasons:\n${r.factors.map(f=>'- '+f.label).join('\n')}\nWhat to do:\n${r.actions.en.map(x=>'- '+x).join('\n')}\n\nMessage:\n${r.text}`)}
+async function hist(){const r=(await(await fetch(`/api/history?q=${encodeURIComponent($('q').value)}&level=${$('lv').value}`)).json());
+ $('hl').innerHTML=r.length?r.map(c=>`<div class="h">${badge(c.level)} <b>${c.score}</b> <span class="mu">${c.ts} · ${c.type}${c.stype?' · '+esc(c.stype):''}</span><div>${esc(c.text.slice(0,140))}</div><div class="mu">${c.factors.slice(0,3).map(f=>esc(f.label)).join(' · ')}</div></div>`).join(''):'<span class="mu">No cases yet.</span>'}
+async function dash(){const s=await(await fetch('/api/stats')).json(),L=['Safe','Low','Medium','High','Critical'],mx=Math.max(1,...Object.values(s.levels)),tm=Math.max(1,...s.scam_types.map(x=>x[1]));
+ $('dash').innerHTML=`<div class="grid"><div class="card"><div class="mu">Total analyzed</div><div class="big">${s.total}</div></div><div class="card"><div class="mu">High / Critical</div><div class="big" style="color:var(--High)">${(s.levels.High||0)+(s.levels.Critical||0)}</div></div><div class="card"><div class="mu">Active campaigns</div><div class="big" style="color:var(--ac2)">${s.campaigns.length}</div></div></div>
+ <div class="card"><b>📡 Campaign radar</b><div class="mu">Domains reused across multiple scam messages (likely one attacker)</div>${s.campaigns.map(d=>`<div class="f">${esc(d[0])}<b>${d[1]} messages</b></div>`).join('')||'<span class="mu">No repeated infrastructure yet.</span>'}</div>
+ <div class="card"><b>Scam types</b>${s.scam_types.map(d=>`<div class="f">${esc(d[0])}<b>${d[1]}</b><div class="bar" style="width:${d[1]/tm*100}%"></div></div>`).join('')||'<span class="mu">None yet</span>'}</div>
+ <div class="card"><b>Risk distribution</b>${L.map(l=>`<div class="f">${l}<b>${s.levels[l]||0}</b><div class="bar" style="background:${col(l)};width:${(s.levels[l]||0)/mx*100}%"></div></div>`).join('')}</div>
+ <div class="card"><b>Cases per day</b>${s.daily.map(d=>`<div class="f">${d[0]}<b>${d[1]}</b><div class="bar" style="width:${d[1]/Math.max(...s.daily.map(x=>x[1]))*100}%"></div></div>`).join('')||'<span class="mu">No data</span>'}</div>
+ <div class="card"><b>Top flagged domains</b>${s.top_domains.map(d=>`<div class="f">${esc(d[0])}<b>${d[1]}</b></div>`).join('')||'<span class="mu">None yet</span>'}</div>`}
+let bulkRes=[];
+function csvRows(t){const rows=[];let r=[],c='',q=false;for(let i=0;i<t.length;i++){const ch=t[i];
+ if(q){if(ch=='"'&&t[i+1]=='"'){c+='"';i++}else if(ch=='"')q=false;else c+=ch}
+ else if(ch=='"')q=true;else if(ch==','){r.push(c);c=''}else if(ch=='\n'||ch=='\r'){if(ch=='\r'&&t[i+1]=='\n')i++;r.push(c);c='';rows.push(r);r=[]}else c+=ch}
+ if(c||r.length){r.push(c);rows.push(r)}return rows}
+function splitMsgs(t){t=t.replace(/\r/g,'').trim();return(/\n\s*\n/.test(t)?t.split(/\n\s*\n/):t.split('\n')).map(x=>x.trim()).filter(Boolean)}
+async function readFile(f){const t=await f.text(),n=f.name.toLowerCase();
+ if(n.endsWith('.csv')){const R=csvRows(t).filter(r=>r.some(x=>x.trim()));if(!R.length)return[];const h=R[0].map(x=>x.trim().toLowerCase()),k=h.findIndex(x=>['text','message','body','sms','content','msg'].includes(x)),hasH=k>=0||h.includes('label');
+  const col=k>=0?k:(h.includes('label')&&h.length>1?(h[0]=='label'?1:0):0);return R.slice(hasH?1:0).map(r=>(r[col]||'').trim()).filter(Boolean)}
+ if(n.endsWith('.eml'))return[t.trim()];
+ if(n.endsWith('.json')){try{const j=JSON.parse(t);return(Array.isArray(j)?j:[j]).map(x=>typeof x=='string'?x:(x.text||x.message||x.body||'')).filter(Boolean)}catch(e){}}
+ return splitMsgs(t)}
+async function bulkRun(){const msgs=splitMsgs($('bt').value||'');for(const f of $('bf').files)msgs.push(...await readFile(f));
+ if(!msgs.length){$('bres').innerHTML='<div class="card mu">Add messages or files first.</div>';return}
+ $('bres').innerHTML=`<div class="card mu">Scanning ${Math.min(msgs.length,200)} messages...</div>`;
+ const r=await(await fetch('/api/bulk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:msgs})})).json();bulkRes=r.results;renderBulk(r,msgs.length)}
+function renderBulk(r,n){const s=r.summary,v=s.levels;
+ $('bres').innerHTML=`<div class="grid"><div class="card"><div class="mu">Scanned</div><div class="big">${s.total}</div>${n>s.total?`<div class="mu">first ${s.total} of ${n}</div>`:''}</div>
+ <div class="card"><div class="mu">High / Critical</div><div class="big" style="color:var(--High)">${(v.High||0)+(v.Critical||0)}</div></div>
+ <div class="card"><div class="mu">Medium</div><div class="big" style="color:var(--Medium)">${v.Medium||0}</div></div>
+ <div class="card"><div class="mu">Safe / Low</div><div class="big" style="color:var(--Safe)">${(v.Safe||0)+(v.Low||0)}</div></div></div>
+ <div class="card"><b>✅ What to do next</b><ol>${r.recommendations.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div>
+ <div class="card tw"><div class="row" style="margin:0 0 10px"><b>Results (highest risk first)</b><button class="s" style="margin-left:auto" onclick="dlBulk()">Download CSV</button></div>
+ <table><tr><th>#</th><th>Risk</th><th>Type</th><th>Message</th><th>Why</th><th>Do this</th></tr>${r.results.map((x,i)=>`<tr><td>${i+1}</td><td>${badge(x.level)} ${x.score}</td><td>${esc(x.scam_type||'-')}</td><td>${esc(x.text.slice(0,110))}</td><td class="mu">${x.reasons.map(esc).join('; ')}</td><td>${esc(x.next)}</td></tr>`).join('')}</table></div>`}
+function dlBulk(){const q=v=>'"'+String(v).replace(/"/g,'""')+'"',rows=[['rank','level','score','scam_type','message','reasons','next_step'],...bulkRes.map((x,i)=>[i+1,x.level,x.score,x.scam_type,x.text,x.reasons.join('; '),x.next])];
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv;charset=utf-8'}));a.download='scamshield_bulk_report.csv';a.click()}
+async function samples(){for(const t of [
+"From: \"SBI Alerts\" <alert@sbi-secure-alerts.xyz>\nReply-To: help@mailbox-ru.top\nSubject: URGENT: KYC expired\n\nDear Customer, your KYC has expired. Update immediately to avoid account blocked: http://sbi-kyc-update.xyz/login",
+"SBI: your account is suspended. Verify your PAN now: http://sbi-kyc-update.xyz/pan",
+"Your electricity will be disconnected tonight at 9:30 PM. Pay the pending bill now: bit.ly/3xYz9 or call 98XXXXXX10",
+"Congratulations! You won ₹25,00,000 in KBC lottery. Send ₹5,000 processing fee to claim your prize.",
+"Your parcel is held at customs. Pay the delivery fee: http://india-post-redeliver.top/pay","http://paypa1-secure-login.com/verify",
+"Part-time job: earn ₹5000 per day by liking YouTube videos. Join our Telegram group.","Hey are you free? Emergency, need ₹10,000 urgently, send on this UPI",
+"Hi, your order has shipped. Track it at https://www.amazon.in/gp/your-orders","Your OTP for HDFC transaction is 482913. Do not share it with anyone."]){await post(t)}$('in').value='Your electricity will be disconnected tonight at 9:30 PM. Pay the pending bill now: bit.ly/3xYz9';run()}
+</script></body></html>

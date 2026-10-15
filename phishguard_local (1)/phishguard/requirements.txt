@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+tldextract
+python-whois
+scikit-learn
+pandas
+httpx
